@@ -1,0 +1,12 @@
+iperf3-deployment/
+├── cloudformation/
+│   └── eks-cluster.yaml
+├── k8s/
+│   ├── namespace.yaml
+│   ├── postgres-init-config.yaml
+│   ├── postgres-deployment.yaml
+│   ├── postgres-service.yaml
+│   ├── iperf3-server-daemonset.yaml
+│   └── iperf3-client-cronjob.yaml
+└── client/
+    └── Dockerfile
