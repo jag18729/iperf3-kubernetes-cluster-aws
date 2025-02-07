@@ -1,12 +1,13 @@
-iperf3-deployment/
-├── cloudformation/
-│   └── eks-cluster.yaml
-├── k8s/
-│   ├── namespace.yaml
-│   ├── postgres-init-config.yaml
-│   ├── postgres-deployment.yaml
-│   ├── postgres-service.yaml
-│   ├── iperf3-server-daemonset.yaml
-│   └── iperf3-client-cronjob.yaml
-└── client/
-    └── Dockerfile
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-scripts
+  namespace: iperf3-benchmark
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS throughput_data (
+      id SERIAL PRIMARY KEY,
+      server VARCHAR(50),
+      test_time TIMESTAMP DEFAULT NOW(),
+      json_output JSONB
+    );

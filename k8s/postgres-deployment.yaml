@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: iperf3-benchmark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:13
+        env:
+          - name: POSTGRES_DB
+            value: "iperfdb"
+          - name: POSTGRES_USER
+            value: "iperfuser"
+          - name: POSTGRES_PASSWORD
+            value: "IPERF_POSTGRES_PASSWORD"  # Replace with your desired password
+        ports:
+          - containerPort: 5432
+        volumeMounts:
+          - name: pgdata
+            mountPath: /var/lib/postgresql/data
+          - name: init-scripts
+            mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: pgdata
+          emptyDir: {}   # For production, use a PersistentVolumeClaim
+        - name: init-scripts
+          configMap:
+            name: postgres-init-scripts

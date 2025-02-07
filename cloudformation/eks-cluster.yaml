@@ -56,11 +56,15 @@ Resources:
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
-      Name: !Ref ClusterName
-      Version: !Ref ClusterVersion
-      RoleArn: !GetAtt EKSClusterRole.Arn
+      Name: 
+        Ref: ClusterName
+      Version: 
+        Ref: ClusterVersion
+      RoleArn: 
+        'Fn::GetAtt': [EKSClusterRole, Arn]
       ResourcesVpcConfig:
-        SubnetIds: !Ref SubnetIds
+        SubnetIds: 
+          Ref: SubnetIds
 
   NodeInstanceRole:
     Type: AWS::IAM::Role

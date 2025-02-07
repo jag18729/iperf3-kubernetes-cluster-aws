@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: iperf3-client
+  namespace: iperf3-benchmark
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: iperf3-client
+            image: YOUR_DOCKER_REGISTRY/iperf3-client:latest
+            env:
+              - name: PG_HOST
+                value: "postgres.iperf3-benchmark.svc.cluster.local"
+              - name: PG_USER
+                value: "iperfuser"
+              - name: PG_PASSWORD
+                value: "IPERF_POSTGRES_PASSWORD"  # Must match the password in postgres-deployment.yaml
+              - name: PG_DB
+                value: "iperfdb"
+              - name: SERVERS
+                value: "SERVER_IP_1,SERVER_IP_2,SERVER_IP_3,SERVER_IP_4,SERVER_IP_5,SERVER_IP_6,SERVER_IP_7,SERVER_IP_8"
+                # Replace SERVER_IP_1, etc. with your /29 ip addresses
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                IFS=',' read -ra ADDR <<< "$SERVERS"
+                for server in "${ADDR[@]}"; do
+                  echo "Testing server: $server"
+                  result=$(iperf3 -c $server -J -V)
+                  escaped_result=$(echo "$result" | sed "s/'/''/g")
+                  sql="INSERT INTO throughput_data (server, json_output) VALUES ('$server', '$escaped_result');"
+                  echo "Running SQL: $sql"
+                  PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DB -c "$sql"
+                done
+          restartPolicy: OnFailure
