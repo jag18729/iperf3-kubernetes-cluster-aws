@@ -82,29 +82,39 @@ Resources:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-        - !Ref NodeInstanceRole
+        - Ref: NodeInstanceRole
 
   EKSNodeGroup:
     Type: AWS::EKS::Nodegroup
     Properties:
-      ClusterName: !Ref ClusterName
-      NodegroupName: !Ref NodeGroupName
+      ClusterName: 
+        Ref: ClusterName
+      NodegroupName: 
+        Ref: NodeGroupName
       ScalingConfig:
-        MinSize: !Ref NodeAutoScalingGroupMinSize
-        MaxSize: !Ref NodeAutoScalingGroupMaxSize
-        DesiredSize: !Ref NodeAutoScalingGroupMinSize
-      Subnets: !Ref SubnetIds
+        MinSize: 
+          Ref: NodeAutoScalingGroupMinSize
+        MaxSize: 
+          Ref: NodeAutoScalingGroupMaxSize
+        DesiredSize: 
+          Ref: NodeAutoScalingGroupMinSize
+      Subnets: 
+        Ref: SubnetIds
       InstanceTypes:
-        - !Ref NodeInstanceType
-      NodeRole: !GetAtt NodeInstanceRole.Arn
+        - Ref: NodeInstanceType
+      NodeRole: 
+        'Fn::GetAtt': [NodeInstanceRole, Arn]
 
 Outputs:
   ClusterName:
     Description: "EKS Cluster Name"
-    Value: !Ref ClusterName
+    Value: 
+      Ref: ClusterName
   ClusterEndpoint:
     Description: "EKS Cluster Endpoint"
-    Value: !GetAtt EKSCluster.Endpoint
+    Value:
+      'Fn::GetAtt': [EKSCluster, Endpoint]
   ClusterCertificateAuthorityData:
     Description: "EKS Cluster CA Data"
-    Value: !GetAtt EKSCluster.CertificateAuthorityData
+    Value:
+      'Fn::GetAtt': [EKSCluster, CertificateAuthorityData]
