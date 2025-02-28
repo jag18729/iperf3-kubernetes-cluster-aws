@@ -22,7 +22,7 @@ The benchmark system consists of:
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/iperf3-kubernetes-cluster-aws.git
+   git clone https://github.com/jag18729/iperf3-kubernetes-cluster-aws
    cd iperf3-kubernetes-cluster-aws
    ```
 
