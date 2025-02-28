@@ -1,0 +1,23 @@
+# Config files with sensitive information
+.env
+config.json
+aws-config.json
+
+# Local development
+.idea/
+.vscode/
+*.swp
+*~
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Logs
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db

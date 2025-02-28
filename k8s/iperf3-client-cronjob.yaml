@@ -2,28 +2,30 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: iperf3-client
-  namespace: iperf3-benchmark
+  namespace: ${NAMESPACE}
 spec:
-  schedule: "*/5 * * * *"
+  schedule: "${IPERF3_SCHEDULE}"
   jobTemplate:
     spec:
       template:
         spec:
           containers:
           - name: iperf3-client
-            image: YOUR_DOCKER_REGISTRY/iperf3-client:latest
+            image: ${DOCKER_REGISTRY}/iperf3-client:latest
             env:
               - name: PG_HOST
-                value: "postgres.iperf3-benchmark.svc.cluster.local"
+                value: "postgres.${NAMESPACE}.svc.cluster.local"
               - name: PG_USER
-                value: "iperfuser"
+                value: "${PG_USER}"
               - name: PG_PASSWORD
-                value: "IPERF_POSTGRES_PASSWORD"  # Must match the password in postgres-deployment.yaml
+                valueFrom:
+                  secretKeyRef:
+                    name: postgres-credentials
+                    key: password
               - name: PG_DB
-                value: "iperfdb"
+                value: "${PG_DB}"
               - name: SERVERS
-                value: "SERVER_IP_1,SERVER_IP_2,SERVER_IP_3,SERVER_IP_4,SERVER_IP_5,SERVER_IP_6,SERVER_IP_7,SERVER_IP_8"
-                # Replace SERVER_IP_1, etc. with your /29 ip addresses
+                value: "${IPERF3_SERVER_IPS}"
             command: ["/bin/sh", "-c"]
             args:
               - |

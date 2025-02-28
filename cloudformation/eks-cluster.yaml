@@ -5,19 +5,16 @@ Parameters:
   ClusterName:
     Description: "Name of the EKS Cluster"
     Type: String
-    Default: "CLUSTER_NAME"
   ClusterVersion:
     Description: "Kubernetes version for the EKS cluster"
     Type: String
-    Default: "1.21"
+    Default: "1.28"
   VpcId:
     Description: "VPC ID for the EKS Cluster"
     Type: AWS::EC2::VPC::Id
-    Default: "VPC_ID"
   SubnetIds:
-    Description: "Comma separated list of Subnet IDs"
+    Description: "List of Subnet IDs"
     Type: List<AWS::EC2::Subnet::Id>
-    Default: [ "SUBNET_ID_1", "SUBNET_ID_2" ]
   NodeInstanceType:
     Description: "EC2 instance type for EKS worker nodes"
     Type: String
@@ -33,11 +30,11 @@ Parameters:
   NodeGroupName:
     Description: "Name of the Node Group"
     Type: String
-    Default: "EKSNodeGroup"
+    Default: "iperf3-nodes"
   KeyName:
     Description: "EC2 KeyPair name to enable SSH access to the worker nodes"
     Type: AWS::EC2::KeyPair::KeyName
-    Default: "KEY_NAME"
+    Default: ""
 
 Resources:
   EKSClusterRole:

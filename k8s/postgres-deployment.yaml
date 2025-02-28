@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: iperf3-benchmark
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -15,14 +15,17 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:13
+        image: postgres:${POSTGRES_VERSION}
         env:
           - name: POSTGRES_DB
-            value: "iperfdb"
+            value: "${PG_DB}"
           - name: POSTGRES_USER
-            value: "iperfuser"
+            value: "${PG_USER}"
           - name: POSTGRES_PASSWORD
-            value: "IPERF_POSTGRES_PASSWORD"  # Replace with your desired password
+            valueFrom:
+              secretKeyRef:
+                name: postgres-credentials
+                key: password
         ports:
           - containerPort: 5432
         volumeMounts:
