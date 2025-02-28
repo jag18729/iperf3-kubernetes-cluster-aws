@@ -83,14 +83,34 @@ To view the benchmark results:
    psql -h localhost -U iperfuser -d iperfdb
    ```
 
-3. Query the results:
+3. Query the results using the view:
+   ```sql
+   SELECT * FROM throughput_metrics ORDER BY timestamp DESC LIMIT 20;
+   ```
+
+4. Compare performance across different test profiles:
    ```sql
    SELECT 
-     server, 
-     timestamp, 
-     json_output::json->'end'->'sum_received'->'bits_per_second' as bits_per_second 
-   FROM throughput_data 
-   ORDER BY timestamp DESC;
+     profile,
+     server,
+     AVG(received_mbps)/1000000 as avg_mbps,
+     MIN(received_mbps)/1000000 as min_mbps,
+     MAX(received_mbps)/1000000 as max_mbps,
+     STDDEV(received_mbps)/1000000 as stddev_mbps
+   FROM throughput_metrics
+   GROUP BY profile, server
+   ORDER BY profile, avg_mbps DESC;
+   ```
+
+5. Analyze performance over time:
+   ```sql
+   SELECT 
+     date_trunc('hour', timestamp) as hour,
+     profile,
+     AVG(received_mbps)/1000000 as avg_mbps
+   FROM throughput_metrics
+   GROUP BY hour, profile
+   ORDER BY hour DESC, profile;
    ```
 
 ## Cleanup
@@ -118,7 +138,54 @@ You can customize the benchmark environment by:
 1. Modifying instance types in `config.json`
 2. Changing test frequency by updating the cron schedule
 3. Building a custom client image with additional tools
-4. Modifying iPerf3 test parameters in the client CronJob
+4. Creating new test profiles in the `config.json` file
+
+### Test Profile Configuration
+
+The system supports multiple test profiles for comprehensive network testing. Here's a sample configuration:
+
+```json
+"test_profiles": [
+  {
+    "name": "tcp-default",
+    "protocol": "tcp",
+    "duration": 10,
+    "parallel": 1,
+    "interval": 1,
+    "format": "JSON",
+    "reverse": false,
+    "zerocopy": true,
+    "enabled": true
+  },
+  {
+    "name": "udp-test",
+    "protocol": "udp",
+    "duration": 10,
+    "parallel": 1,
+    "bandwidth": "100M",
+    "interval": 1,
+    "format": "JSON",
+    "enabled": false
+  }
+]
+```
+
+Available parameters:
+
+| Parameter      | Description                                           | Default |
+|----------------|-------------------------------------------------------|---------|
+| name           | Unique profile name                                   | required |
+| protocol       | Test protocol (`tcp` or `udp`)                        | tcp     |
+| duration       | Test duration in seconds                              | 10      |
+| parallel       | Number of parallel client threads                     | 1       |
+| interval       | Seconds between periodic reports                      | 1       |
+| format         | Output format (always JSON in this implementation)    | JSON    |
+| reverse        | Reverse the direction (server sends, client receives) | false   |
+| window         | TCP window size (e.g. "1M")                           | -       |
+| bandwidth      | Target bandwidth for UDP tests (e.g. "100M")          | -       |
+| bidirectional  | Run test in both directions simultaneously            | false   |
+| zerocopy       | Use zero-copy method for sending data                 | false   |
+| enabled        | Whether this profile should be run                    | false   |
 
 ## Troubleshooting
 

@@ -9,6 +9,10 @@ spec:
     spec:
       template:
         spec:
+          volumes:
+            - name: iperf3-test-profiles
+              configMap:
+                name: iperf3-test-profiles
           containers:
           - name: iperf3-client
             image: ${DOCKER_REGISTRY}/iperf3-client:latest
@@ -26,16 +30,78 @@ spec:
                 value: "${PG_DB}"
               - name: SERVERS
                 value: "${IPERF3_SERVER_IPS}"
+            volumeMounts:
+              - name: iperf3-test-profiles
+                mountPath: /etc/iperf3
             command: ["/bin/sh", "-c"]
             args:
               - |
+                # Load test profiles from ConfigMap
+                if [ -f "/etc/iperf3/profiles.json" ]; then
+                  PROFILES=$(cat /etc/iperf3/profiles.json)
+                else
+                  echo "No test profiles found, using default"
+                  PROFILES='[{"name":"default","protocol":"tcp","duration":10,"parallel":1,"interval":1,"format":"JSON","enabled":true}]'
+                fi
+                
+                # Parse server list
                 IFS=',' read -ra ADDR <<< "$SERVERS"
-                for server in "${ADDR[@]}"; do
-                  echo "Testing server: $server"
-                  result=$(iperf3 -c $server -J -V)
-                  escaped_result=$(echo "$result" | sed "s/'/''/g")
-                  sql="INSERT INTO throughput_data (server, json_output) VALUES ('$server', '$escaped_result');"
-                  echo "Running SQL: $sql"
-                  PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DB -c "$sql"
+                
+                # Process each enabled profile
+                echo "$PROFILES" | jq -c '.[] | select(.enabled == true)' | while read -r profile; do
+                  profile_name=$(echo "$profile" | jq -r '.name')
+                  echo "Running profile: $profile_name"
+                  
+                  # Extract test parameters
+                  protocol=$(echo "$profile" | jq -r '.protocol // "tcp"')
+                  duration=$(echo "$profile" | jq -r '.duration // 10')
+                  parallel=$(echo "$profile" | jq -r '.parallel // 1')
+                  interval=$(echo "$profile" | jq -r '.interval // 1')
+                  reverse=$(echo "$profile" | jq -r '.reverse // false')
+                  window=$(echo "$profile" | jq -r '.window // ""')
+                  bandwidth=$(echo "$profile" | jq -r '.bandwidth // ""')
+                  bidirectional=$(echo "$profile" | jq -r '.bidirectional // false')
+                  zerocopy=$(echo "$profile" | jq -r '.zerocopy // false')
+                  
+                  # Build iperf3 command with options
+                  for server in "${ADDR[@]}"; do
+                    echo "Testing server: $server with profile: $profile_name"
+                    
+                    IPERF_CMD="iperf3 -c $server -t $duration -P $parallel -i $interval -J"
+                    
+                    # Add protocol-specific options
+                    if [ "$protocol" = "udp" ]; then
+                      IPERF_CMD="$IPERF_CMD -u"
+                      if [ -n "$bandwidth" ]; then
+                        IPERF_CMD="$IPERF_CMD -b $bandwidth"
+                      fi
+                    fi
+                    
+                    # Add other options if specified
+                    if [ "$reverse" = "true" ]; then
+                      IPERF_CMD="$IPERF_CMD -R"
+                    fi
+                    
+                    if [ "$bidirectional" = "true" ]; then
+                      IPERF_CMD="$IPERF_CMD --bidir"
+                    fi
+                    
+                    if [ -n "$window" ]; then
+                      IPERF_CMD="$IPERF_CMD -w $window"
+                    fi
+                    
+                    if [ "$zerocopy" = "true" ]; then
+                      IPERF_CMD="$IPERF_CMD -Z"
+                    fi
+                    
+                    echo "Running command: $IPERF_CMD"
+                    result=$($IPERF_CMD)
+                    
+                    # Store results in database
+                    escaped_result=$(echo "$result" | sed "s/'/''/g")
+                    sql="INSERT INTO throughput_data (server, profile, json_output) VALUES ('$server', '$profile_name', '$escaped_result');"
+                    echo "Storing results in database"
+                    PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DB -c "$sql"
+                  done
                 done
           restartPolicy: OnFailure

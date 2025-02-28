@@ -23,6 +23,49 @@
   },
   "iperf3": {
     "schedule": "*/5 * * * *",
-    "server_ips": []
+    "server_ips": [],
+    "test_profiles": [
+      {
+        "name": "tcp-default",
+        "protocol": "tcp",
+        "duration": 10,
+        "parallel": 1,
+        "interval": 1,
+        "format": "JSON",
+        "reverse": false,
+        "zerocopy": true,
+        "enabled": true
+      },
+      {
+        "name": "tcp-high-bandwidth",
+        "protocol": "tcp",
+        "duration": 30,
+        "parallel": 4,
+        "interval": 5,
+        "format": "JSON",
+        "window": "1M",
+        "reverse": false,
+        "enabled": false
+      },
+      {
+        "name": "udp-test",
+        "protocol": "udp",
+        "duration": 10,
+        "parallel": 1,
+        "bandwidth": "100M",
+        "interval": 1,
+        "format": "JSON",
+        "enabled": false
+      },
+      {
+        "name": "bidirectional",
+        "protocol": "tcp",
+        "duration": 20,
+        "bidirectional": true,
+        "interval": 5,
+        "format": "JSON",
+        "enabled": false
+      }
+    ]
   }
 }

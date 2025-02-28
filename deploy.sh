@@ -71,6 +71,7 @@ DOCKER_REGISTRY=$(echo $CONFIG | jq -r '.docker.registry')
 # Extract iperf3 configuration
 IPERF3_SCHEDULE=$(echo $CONFIG | jq -r '.iperf3.schedule')
 IPERF3_SERVER_IPS=$(echo $CONFIG | jq -r '.iperf3.server_ips | join(",")')
+IPERF3_TEST_PROFILES=$(echo $CONFIG | jq -r '.iperf3.test_profiles')
 
 # Prompt user before starting
 echo -e "${YELLOW}You are about to deploy an iperf3 benchmark cluster with the following settings:${NC}"
@@ -213,6 +214,9 @@ for file in k8s/*.yaml; do
     filename=$(basename "$file")
     # Skip postgres-init-config.yaml as it will be applied separately
     if [ "$filename" != "postgres-init-config.yaml" ]; then
+        # Escape JSON for sed
+        IPERF3_TEST_PROFILES_ESCAPED=$(echo "$IPERF3_TEST_PROFILES" | sed 's/\//\\\//g')
+        
         sed -e "s/\${NAMESPACE}/$NAMESPACE/g" \
             -e "s/\${POSTGRES_VERSION}/$POSTGRES_VERSION/g" \
             -e "s/\${PG_DB}/$PG_DB/g" \
@@ -221,6 +225,7 @@ for file in k8s/*.yaml; do
             -e "s/\${DOCKER_REGISTRY}/$DOCKER_REGISTRY/g" \
             -e "s/\${IPERF3_SCHEDULE}/$IPERF3_SCHEDULE/g" \
             -e "s/\${IPERF3_SERVER_IPS}/$IPERF3_SERVER_IPS/g" \
+            -e "s/\${IPERF3_TEST_PROFILES}/$IPERF3_TEST_PROFILES_ESCAPED/g" \
             "$file" > "$TEMP_DIR/$filename"
     fi
 done
