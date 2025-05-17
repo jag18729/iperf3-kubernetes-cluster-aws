@@ -2,31 +2,12 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgres-init-scripts
-  namespace: ${NAMESPACE}
+  namespace: iperf3-benchmark
 data:
   init.sql: |
     CREATE TABLE IF NOT EXISTS throughput_data (
       id SERIAL PRIMARY KEY,
-      server VARCHAR(50) NOT NULL,
-      profile VARCHAR(50) NOT NULL DEFAULT 'default',
-      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      json_output TEXT NOT NULL
+      server VARCHAR(50),
+      test_time TIMESTAMP DEFAULT NOW(),
+      json_output JSONB
     );
-    
-    -- Create indices for faster queries
-    CREATE INDEX IF NOT EXISTS idx_throughput_data_server ON throughput_data(server);
-    CREATE INDEX IF NOT EXISTS idx_throughput_data_profile ON throughput_data(profile);
-    CREATE INDEX IF NOT EXISTS idx_throughput_data_timestamp ON throughput_data(timestamp);
-    
-    -- Create view for extracted metrics
-    CREATE OR REPLACE VIEW throughput_metrics AS
-    SELECT 
-      id,
-      server,
-      profile,
-      timestamp,
-      (json_output::json->'end'->'sum_sent'->'bits_per_second')::numeric as sent_mbps,
-      (json_output::json->'end'->'sum_received'->'bits_per_second')::numeric as received_mbps,
-      (json_output::json->'end'->'streams'->0->'sender'->'retransmits')::numeric as retransmits,
-      (json_output::json->'end'->'streams'->0->'udp'->'lost_percent')::numeric as lost_percent
-    FROM throughput_data;

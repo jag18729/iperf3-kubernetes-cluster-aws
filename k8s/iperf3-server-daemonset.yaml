@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: iperf3-server
-  namespace: ${NAMESPACE}
+  namespace: iperf3-benchmark
 spec:
   selector:
     matchLabels:
@@ -12,19 +12,11 @@ spec:
       labels:
         app: iperf3-server
     spec:
+      hostNetwork: true
       containers:
       - name: iperf3-server
         image: networkstatic/iperf3
-        args: ["-s"]
+        args: ["-s", "-V"]  # Verbose mode enabled with -V
         ports:
-        - containerPort: 5201
-          hostPort: 5201
-          name: iperf3
-        resources:
-          limits:
-            cpu: "1"
-            memory: "512Mi"
-          requests:
-            cpu: "500m"
-            memory: "256Mi"
-      hostNetwork: true  # Run in host network to get accurate measurements
+          - containerPort: 5201
+            hostPort: 5201
